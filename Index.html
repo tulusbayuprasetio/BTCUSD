@@ -1,0 +1,87 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QuantumEntry Chart Full</title>
+  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+  <style>
+    #chart { width: 100%; height: 600px; }
+    body { background: #000; color: #fff; font-family: sans-serif; }
+  </style>
+</head>
+<body>
+  <h2>QuantumEntry: Full Auto Analysis (Trendline, SNR, Pattern, Fibonacci)</h2>
+  <div id="chart"></div>
+  <script>
+    const chart = LightweightCharts.createChart(document.getElementById('chart'), {
+      layout: { background: { color: '#000' }, textColor: '#fff' },
+      grid: { vertLines: { color: '#333' }, horzLines: { color: '#333' } },
+      timeScale: { timeVisible: true, secondsVisible: false },
+    });const candleSeries = chart.addCandlestickSeries();
+
+function drawSNR(data) {
+  const highs = data.map(c => c.high);
+  const lows = data.map(c => c.low);
+  const avgHigh = highs.reduce((a,b)=>a+b,0) / highs.length;
+  const avgLow = lows.reduce((a,b)=>a+b,0) / lows.length;
+
+  chart.addLineSeries({ color: 'red' }).setData(data.map(d => ({ time: d.time, value: avgHigh })));
+  chart.addLineSeries({ color: 'green' }).setData(data.map(d => ({ time: d.time, value: avgLow })));
+}
+
+function drawPatterns(data) {
+  const markers = [];
+  for (let i = 1; i < data.length; i++) {
+    const p = data[i-1], c = data[i];
+    const body = Math.abs(c.close - c.open);
+    const range = c.high - c.low;
+    if (body/range < 0.1) markers.push({ time: c.time, position: 'aboveBar', color: 'yellow', shape: 'circle', text: 'Doji' });
+    if (p.close < p.open && c.close > c.open && c.open < p.close && c.close > p.open) markers.push({ time: c.time, position: 'belowBar', color: 'lime', shape: 'arrowUp', text: 'Bull' });
+    if (p.close > p.open && c.close < c.open && c.open > p.close && c.close < p.open) markers.push({ time: c.time, position: 'aboveBar', color: 'red', shape: 'arrowDown', text: 'Bear' });
+  }
+  candleSeries.setMarkers(markers);
+}
+
+function drawTrendlines(data) {
+  let lows = [], highs = [];
+  for (let i = 1; i < data.length - 1; i++) {
+    if (data[i].low < data[i-1].low && data[i].low < data[i+1].low) lows.push({ time: data[i].time, value: data[i].low });
+    if (data[i].high > data[i-1].high && data[i].high > data[i+1].high) highs.push({ time: data[i].time, value: data[i].high });
+  }
+  if (lows.length >= 2) chart.addLineSeries({ color: 'cyan' }).setData([lows[lows.length-2], lows[lows.length-1]]);
+  if (highs.length >= 2) chart.addLineSeries({ color: 'orange' }).setData([highs[highs.length-2], highs[highs.length-1]]);
+}
+
+function drawFibonacci(data) {
+  const last = data[data.length - 1];
+  const min = Math.min(...data.map(c => c.low));
+  const max = Math.max(...data.map(c => c.high));
+  const levels = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
+  levels.forEach(lv => {
+    const val = max - lv * (max - min);
+    chart.addLineSeries({ color: 'blue', lineWidth: 1, priceLineVisible: false })
+         .setData([{ time: data[0].time, value: val }, { time: last.time, value: val }]);
+  });
+}
+
+fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=5m&limit=100')
+  .then(res => res.json())
+  .then(data => {
+    const formatted = data.map(d => ({ time: d[0]/1000, open: +d[1], high: +d[2], low: +d[3], close: +d[4] }));
+    candleSeries.setData(formatted);
+    drawSNR(formatted);
+    drawPatterns(formatted);
+    drawTrendlines(formatted);
+    drawFibonacci(formatted);
+  });
+
+const ws = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@kline_5m');
+ws.onmessage = (event) => {
+  const k = JSON.parse(event.data).k;
+  const live = { time: k.t/1000, open: +k.o, high: +k.h, low: +k.l, close: +k.c };
+  candleSeries.update(live);
+};
+
+  </script>
+</body>
+</html>
