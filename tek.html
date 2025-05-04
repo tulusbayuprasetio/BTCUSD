@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>QuantumEntry: Auto Market Analysis</title>
+  <script src="https://unpkg.com/lightweight-charts@3.7.0/dist/lightweight-charts.standalone.production.js"></script>
+  <style>
+    body {
+      margin: 0;
+      background-color: #111;
+      color: white;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    header {
+      padding: 1rem;
+      text-align: center;
+    }
+    #chart {
+      width: 90vw;
+      height: 500px;
+    }
+    .note {
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+      opacity: 0.7;
+    }
+    select {
+      margin-top: 1rem;
+      padding: 0.5rem;
+      font-size: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h2>QuantumEntry: Full Auto Analysis (Trendline, SNR, Pattern, Fibonacci)</h2>
+    <div class="note">Scalping (M1) | Swing Trading (H4)</div>
+    <select id="tf-select">
+      <option value="m1">M1 - Scalping</option>
+      <option value="h4">H4 - Swing</option>
+    </select>
+  </header>
+  <div id="chart"></div>
+
+  <script src="main.js"></script>
+</body>
+</html>
